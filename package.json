@@ -1,0 +1,27 @@
+{
+  "name": "stripe-account-migration",
+  "version": "1.0.0",
+  "description": "a collection of tools to help you migrate stripe accounts",
+  "main": "start.js",
+  "scripts": {
+    "migrate": "node start.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "stripe",
+    "migration",
+    "pan"
+  ],
+  "author": "helloworld9912",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "fs": "^0.0.1-security",
+    "stripe": "^14.20.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.25",
+    "@types/stripe": "^8.0.417",
+    "typescript": "^5.4.2"
+  }
+}
