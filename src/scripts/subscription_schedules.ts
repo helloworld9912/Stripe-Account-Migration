@@ -2,19 +2,7 @@ import Stripe from "stripe";
 import * as dotenv from "dotenv";
 dotenv.config();
 
-// Define an interface for the coupon data
-interface ICouponData {
-  id?: string;
-  name?: string;
-  percent_off?: number;
-  duration: "forever" | "once" | "repeating";
-  duration_in_months?: number;
-  currency?: string;
-  amount_off?: number;
-  max_redemptions?: number;
-}
-
-interface ICouponListRequestParams {
+interface ISchedulesListRequestParams {
   limit: number;
   starting_after?: string;
 }
@@ -104,14 +92,14 @@ async function createCoupon(
   return destinationStripe.coupons.create(couponParams);
 }
 
-// Function to retrieve all coupons from the source Stripe account
-async function getAllCoupons(): Promise<Stripe.Coupon[]> {
-  let coupons: Stripe.Coupon[] = [];
+// Function to retrieve all Scriptions Schedules from the source Stripe account
+async function getAllScriptionSchedules(): Promise<Stripe.SubscriptionSchedule[]> {
+  let schedules: Stripe.SubscriptionSchedule[] = [];
   let hasMore: boolean = true;
   let startingAfter: string | null = null;
 
   while (hasMore) {
-    let request_params: ICouponListRequestParams = {
+    let request_params: ISchedulesListRequestParams = {
       limit: PAGE_SIZE,
     };
 
@@ -119,9 +107,9 @@ async function getAllCoupons(): Promise<Stripe.Coupon[]> {
       request_params["starting_after"] = startingAfter;
     }
 
-    const response = await sourceStripe.coupons.list(request_params);
+    const response = await sourceStripe.subscriptionSchedules.list(request_params);
 
-    coupons = coupons.concat(response.data);
+    schedules = schedules.concat(response.data);
 
     hasMore = response.has_more;
     if (response.data.length > 0) {
@@ -129,11 +117,11 @@ async function getAllCoupons(): Promise<Stripe.Coupon[]> {
     }
   }
 
-  return coupons.reverse();
+  return schedules.reverse();
 }
 
-// Function to migrate coupons
-async function migrateCoupons(): Promise<void> {
+// Function to migrate Scription Schedules
+async function migrateScriptionSchedules(): Promise<void> {
   //check if destination and source env are properly set
   if (!SOURCE_STRIPE_SECRET_KEY || !DESTINATION_STRIPE_SECRET_KEY) {
     console.error(
@@ -142,20 +130,22 @@ async function migrateCoupons(): Promise<void> {
     return;
   }
 
-  console.log("Starting the migration of coupons...");
-  const coupons = await getAllCoupons();
-  console.log(`Total coupons to migrate: ${coupons.length}`);
+  console.log("Starting the migration of Scription Schedules...");
+  const subscription_schedules = await getAllScriptionSchedules();
+  console.log(`Total subscription schedules to migrate: ${subscription_schedules.length}`);
 
-  for (let coupon of coupons) {
+  /*
+  for (let schedule of subscription_schedules) {
     try {
-      const newCoupon = await createCoupon(coupon);
-      console.log(`New coupon created: ${newCoupon.id}`);
+      const newSchedule = await createSubscriptionSchedule(schedule);
+      console.log(`New Schedule created: ${newSchedule.id}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       console.error(
-        `Failed to create coupon: ${coupon.id} - reason: ${message}`
+        `Failed to create subscription schedule: ${schedule.id} - reason: ${message}`
       );
     }
   }
+  */
 }
-export { migrateCoupons };
+export { migrateScriptionSchedules };

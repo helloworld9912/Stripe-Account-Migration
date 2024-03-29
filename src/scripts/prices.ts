@@ -18,126 +18,120 @@ const DESTINATION_STRIPE_SECRET_KEY: string = process.env.DESTINATION_STRIPE_SEC
 const sourceStripe = new Stripe(SOURCE_STRIPE_SECRET_KEY);
 const destinationStripe = new Stripe(DESTINATION_STRIPE_SECRET_KEY);
 
-interface PriceData extends Partial<Stripe.PriceCreateParams> {
-  id: string;
-}
+function convertToPriceCreateParams(price: Stripe.Price): Stripe.PriceCreateParams {
 
-function cleanObject<T extends Record<string, unknown>>(obj: T): Partial<T> {
-    return Object.entries(obj).reduce((acc: Record<string, unknown>, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = value;
-      }
-      return acc;
-    }, {}) as Partial<T>;
+  //if billing_scheme is set to tiered, return (not implemented yet)
+  if(price.billing_scheme === 'tiered') {
+    console.error("Tiered billing_scheme is not supported yet");
+    return {} as Stripe.PriceCreateParams;
+  }
+
+  // Start with the required properties
+  let priceCreateParams: Stripe.PriceCreateParams = {
+    currency: price.currency,
+    product: price.product as string,
+  };
+
+  // Add conditional properties if they exist on the provided price object
+  if (price.nickname) {
+    priceCreateParams.nickname = price.nickname;
   }
   
+  if ('active' in price) {
+    priceCreateParams.active = price.active;
+  }
+  
+  if (price.metadata) {
+    priceCreateParams.metadata = price.metadata;
+  }
+
+  if (price.recurring) {
+    priceCreateParams.recurring = {
+      interval: price.recurring.interval
+    };
+
+    if (price.recurring.aggregate_usage) {
+      priceCreateParams.recurring.aggregate_usage = price.recurring.aggregate_usage;
+    }
+    
+    if (price.recurring.interval_count) {
+      priceCreateParams.recurring.interval_count = price.recurring.interval_count;
+    }
+    
+    if (price.recurring.usage_type) {
+      priceCreateParams.recurring.usage_type = price.recurring.usage_type;
+    }
+  }
+
+  if (price.unit_amount) {
+    priceCreateParams.unit_amount = price.unit_amount;
+  }
+  
+  if (price.billing_scheme) {
+    priceCreateParams.billing_scheme = price.billing_scheme;
+  }
+  
+  if (price.custom_unit_amount) {
+    priceCreateParams.custom_unit_amount = {
+      enabled: true,
+      maximum: price.custom_unit_amount.maximum as number,
+      minimum: price.custom_unit_amount.minimum as number,
+      preset: price.custom_unit_amount.preset as number,
+    };
+  }
+  
+  if (price.lookup_key) {
+    priceCreateParams.lookup_key = price.lookup_key;
+  }
+  
+  //price.product_data is ignored as we only need the product ID
+  
+  if (price.tax_behavior) {
+    priceCreateParams.tax_behavior = price.tax_behavior;
+  }
+  
+  if (price.tiers_mode) {
+    priceCreateParams.tiers_mode = price.tiers_mode;
+  }
+  
+  if (price.transform_quantity) {
+    priceCreateParams.transform_quantity = {
+      divide_by: price.transform_quantity.divide_by,
+      round: price.transform_quantity.round,
+    };
+  }
+  
+  if (price.unit_amount_decimal) {
+    priceCreateParams.unit_amount_decimal = price.unit_amount_decimal;
+  }
+  
+  // The actual Price object may contain other properties for currency_options and tiers
+  if (price.currency_options) {
+    priceCreateParams.currency_options = {};
+
+    for (const [currencyCode, currencyOption] of Object.entries(price.currency_options)) {
+        let currencyOptionParams: Stripe.PriceCreateParams.CurrencyOptions = {};
+
+        if (currencyOption.unit_amount) {
+          currencyOptionParams.unit_amount = currencyOption.unit_amount;
+        }
+        
+        priceCreateParams.currency_options[currencyCode] = currencyOptionParams;
+    }
+  }
+
+  return priceCreateParams;
+}
+
+
 
   async function createPrice(priceData: Stripe.Price): Promise<Stripe.Response<Stripe.Price>> {
-    let newPriceData: Stripe.PriceCreateParams = {
-        ...priceData
-    }
-
+    const newPriceData = convertToPriceCreateParams(priceData);
     const newPrice = await destinationStripe.prices.create(newPriceData);
     return newPrice;
   }
 
  
-async function createPrice2(priceData: Stripe.Price): Promise<Stripe.Response<Stripe.Price>> {
-  let newPriceData: Stripe.PriceCreateParams = cleanObject({
-    currency: priceData.currency,
-    active: priceData.active,
-    nickname: priceData.nickname,
-    product: priceData.product,
-    recurring: priceData.recurring && cleanObject({
-      interval: priceData.recurring.interval,
-      aggregate_usage: priceData.recurring.aggregate_usage,
-      interval_count: priceData.recurring.interval_count,
-      usage_type: priceData.recurring.usage_type,
-    }),
-    billing_scheme: priceData.billing_scheme,
-    currency_options: priceData.currency_options,
-    custom_unit_amount: priceData.custom_unit_amount,
-    tax_behavior: priceData.tax_behavior,
-    tiers: priceData.tiers,
-    tiers_mode: priceData.tiers_mode,
-    transform_quantity: priceData.transform_quantity,
-    unit_amount_decimal: priceData.unit_amount_decimal,
-    metadata: {
-      ...priceData.metadata,
-      source_price_id: priceData.id,
-    }
-  }) as Stripe.PriceCreateParams; // Cast is safe after cleaning
-
-  // Create the price using the Stripe API
-  const newPrice = await destinationStripe.prices.create(newPriceData);
-  
-  return newPrice;
-}
-
-
-async function createPrice1(priceData: Stripe.Price): Promise<Stripe.Price> {
-
-     // Start with mandatory fields
-  let newPriceData: Stripe.PriceCreateParams = {
-    currency: priceData.currency, //required
-    product: priceData.product as string, //required
-    metadata: {
-      ...(priceData.metadata && { ...priceData.metadata }),
-      source_price_id: priceData.id,
-    }
-  };
-
-  // Conditionally add optional fields if they exist
-  if (priceData.active) newPriceData.active = priceData.active;
-  if (priceData.nickname) newPriceData.nickname = priceData.nickname;
-  if (priceData.product) newPriceData.product = priceData.product as string;
-
-  // Handle the recurring object more carefully
-  if (priceData.recurring) {
-    newPriceData.recurring = {
-        interval: priceData.recurring.interval, //required
-    };
-    if (priceData.recurring.aggregate_usage) newPriceData.recurring.aggregate_usage = priceData.recurring.aggregate_usage;
-    if (priceData.recurring.interval_count) newPriceData.recurring.interval_count = priceData.recurring.interval_count;
-    if (priceData.recurring.usage_type) newPriceData.recurring.usage_type = priceData.recurring.usage_type;
-    if (priceData.unit_amount) newPriceData.unit_amount = priceData.unit_amount;
-  }
-
-  //billing_scheme | enum
-  //currency_options | object
-
-
-  /*
-  let newPriceData: Stripe.PriceCreateParams = {
-    ...id && { currency },
-    ...active !== undefined && { active },
-    ...(nickname && { nickname }),
-    ...(product && { product }),
-    ...recurring && { recurring: {
-      ...recurring.interval && { interval: recurring.interval },
-      ...recurring.aggregate_usage && { aggregate_usage: recurring.aggregate_usage },
-      ...recurring.interval_count && { interval_count: recurring.interval_count },
-      ...recurring.usage_type && { usage_type: recurring.usage_type },
-    }},
-    ...(billing_scheme && { billing_scheme }),
-    ...(currency_options && { currency_options }),
-    ...(custom_unit_amount && { custom_unit_amount }),
-    ...(lookup_key && { lookup_key }),
-    ...(tax_behavior && { tax_behavior }),
-    ...(tiers && { tiers }),
-    ...(tiers_mode && { tiers_mode }),
-    ...(transform_quantity && { transform_quantity }),
-    ...(unit_amount_decimal && { unit_amount_decimal }),
-    metadata: {
-      ...metadata,
-      source_price_id: id,
-    }
-  };
-  */
-
-  const newPrice: Stripe.Price = await destinationStripe.prices.create(newPriceData);
-  return newPrice;
-}
 
 async function getAllPrices(): Promise<Stripe.Price[]> {
     let prices: Stripe.Price[] = [];
