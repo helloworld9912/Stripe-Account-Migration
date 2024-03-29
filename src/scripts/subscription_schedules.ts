@@ -17,83 +17,10 @@ const DESTINATION_STRIPE_SECRET_KEY: string = process.env
 const sourceStripe = new Stripe(SOURCE_STRIPE_SECRET_KEY);
 const destinationStripe = new Stripe(DESTINATION_STRIPE_SECRET_KEY);
 
-function convertToCouponCreateParams(
-  coupon: Stripe.Coupon
-): Stripe.CouponCreateParams {
-  // start with an empty object
-  let couponCreateParams: Stripe.CouponCreateParams = {};
-
-  if (coupon.id) {
-    couponCreateParams.id = coupon.id;
-  }
-
-  // manually assign each compatible property from Coupon to CouponCreateParams
-  if (coupon.amount_off !== null) {
-    couponCreateParams.amount_off = coupon.amount_off;
-    // currency is required if amount_off is set
-    couponCreateParams.currency = coupon.currency || undefined;
-  }
-
-  // percent_off is not allowed if amount_off is set, and vice versa
-  if (coupon.percent_off !== null && coupon.amount_off === null) {
-    couponCreateParams.percent_off = coupon.percent_off;
-  }
-
-  couponCreateParams.duration = coupon.duration;
-  if (coupon.duration === "repeating") {
-    couponCreateParams.duration_in_months =
-      coupon.duration_in_months || undefined;
-  }
-
-  // Optional properties can be set as needed based on the Coupon object
-  couponCreateParams.max_redemptions = coupon.max_redemptions || undefined;
-  couponCreateParams.redeem_by = coupon.redeem_by || undefined;
-  couponCreateParams.name = coupon.name || undefined;
-
-  // If metadata exists and is not null, convert all values to strings
-  if (coupon.metadata !== null) {
-    couponCreateParams.metadata = {};
-    for (const [key, value] of Object.entries(coupon.metadata)) {
-      if (value !== null) {
-        couponCreateParams.metadata[key] = String(value);
-      }
-    }
-  }
-
-  // Handle 'applies_to' field
-  if (coupon.applies_to?.products) {
-    couponCreateParams.applies_to = {
-      products: coupon.applies_to.products,
-    };
-  }
-
-  // Handle 'currency_options' field
-  if (coupon.currency_options) {
-    couponCreateParams.currency_options = {};
-
-    for (const [currency, options] of Object.entries(coupon.currency_options)) {
-      if (options.amount_off !== null) {
-        // Assuming this is a required property based on your additional context
-        couponCreateParams.currency_options[currency] = {
-          amount_off: options.amount_off,
-        };
-      }
-    }
-  }
-
-  return couponCreateParams;
-}
-
-// Function to create a coupon on destination Stripe account
-async function createCoupon(
-  coupon: Stripe.Coupon
-): Promise<Stripe.Response<Stripe.Coupon>> {
-  const couponParams = convertToCouponCreateParams(coupon);
-  return destinationStripe.coupons.create(couponParams);
-}
-
 // Function to retrieve all Scriptions Schedules from the source Stripe account
-async function getAllScriptionSchedules(): Promise<Stripe.SubscriptionSchedule[]> {
+async function getAllScriptionSchedules(): Promise<
+  Stripe.SubscriptionSchedule[]
+> {
   let schedules: Stripe.SubscriptionSchedule[] = [];
   let hasMore: boolean = true;
   let startingAfter: string | null = null;
@@ -107,7 +34,9 @@ async function getAllScriptionSchedules(): Promise<Stripe.SubscriptionSchedule[]
       request_params["starting_after"] = startingAfter;
     }
 
-    const response = await sourceStripe.subscriptionSchedules.list(request_params);
+    const response = await sourceStripe.subscriptionSchedules.list(
+      request_params
+    );
 
     schedules = schedules.concat(response.data);
 
@@ -132,7 +61,9 @@ async function migrateScriptionSchedules(): Promise<void> {
 
   console.log("Starting the migration of Scription Schedules...");
   const subscription_schedules = await getAllScriptionSchedules();
-  console.log(`Total subscription schedules to migrate: ${subscription_schedules.length}`);
+  console.log(
+    `Total subscription schedules to migrate: ${subscription_schedules.length}`
+  );
 
   /*
   for (let schedule of subscription_schedules) {
