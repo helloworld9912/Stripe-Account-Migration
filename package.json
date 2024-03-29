@@ -5,6 +5,7 @@
   "main": "start.js",
   "scripts": {
     "migrate": "npx ts-node src/migrate.ts",
+    "inventory": "npx ts-node src/inventory.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

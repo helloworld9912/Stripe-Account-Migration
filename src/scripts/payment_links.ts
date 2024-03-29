@@ -245,7 +245,7 @@ async function createPaymentLink(
 }
 
 // Function to retrieve all payment links from the source Stripe account
-async function getAllPaymentLinks(): Promise<Stripe.PaymentLink[]> {
+export async function getAllPaymentLinks(): Promise<Stripe.PaymentLink[]> {
   let links: Stripe.PaymentLink[] = [];
   let hasMore: boolean = true;
   let startingAfter: string | null = null;

@@ -248,7 +248,7 @@ async function createSubscription(
 }
 
 // Function to retrieve all coupons from the source Stripe account
-async function getAllSubscriptions(): Promise<Stripe.Subscription[]> {
+export async function getAllSubscriptions(): Promise<Stripe.Subscription[]> {
   let subscriptions: Stripe.Subscription[] = [];
   let hasMore: boolean = true;
   let startingAfter: string | null = null;

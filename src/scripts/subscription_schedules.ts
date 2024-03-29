@@ -18,7 +18,7 @@ const sourceStripe = new Stripe(SOURCE_STRIPE_SECRET_KEY);
 const destinationStripe = new Stripe(DESTINATION_STRIPE_SECRET_KEY);
 
 // Function to retrieve all Scriptions Schedules from the source Stripe account
-async function getAllScriptionSchedules(): Promise<
+export async function getAllScriptionSchedules(): Promise<
   Stripe.SubscriptionSchedule[]
 > {
   let schedules: Stripe.SubscriptionSchedule[] = [];

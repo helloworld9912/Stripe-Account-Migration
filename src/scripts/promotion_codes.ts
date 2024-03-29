@@ -71,7 +71,7 @@ async function createPromotionCode(
 }
 
 // Function to retrieve all promotion codes from the source Stripe account
-async function getAllPromotionCodes(): Promise<Stripe.PromotionCode[]> {
+export async function getAllPromotionCodes(): Promise<Stripe.PromotionCode[]> {
   let promotion_codes: Stripe.PromotionCode[] = [];
   let hasMore: boolean = true;
   let startingAfter: string | null = null;

@@ -2,18 +2,6 @@ import Stripe from "stripe";
 import * as dotenv from "dotenv";
 dotenv.config();
 
-// Define an interface for the coupon data
-interface ICouponData {
-  id?: string;
-  name?: string;
-  percent_off?: number;
-  duration: "forever" | "once" | "repeating";
-  duration_in_months?: number;
-  currency?: string;
-  amount_off?: number;
-  max_redemptions?: number;
-}
-
 interface ICouponListRequestParams {
   limit: number;
   starting_after?: string;
@@ -105,7 +93,7 @@ async function createCoupon(
 }
 
 // Function to retrieve all coupons from the source Stripe account
-async function getAllCoupons(): Promise<Stripe.Coupon[]> {
+export async function getAllCoupons(): Promise<Stripe.Coupon[]> {
   let coupons: Stripe.Coupon[] = [];
   let hasMore: boolean = true;
   let startingAfter: string | null = null;

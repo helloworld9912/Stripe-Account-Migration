@@ -69,7 +69,7 @@ async function createProduct(
 }
 
 // Function to retrieve all products from the source Stripe account
-async function getAllProducts(): Promise<Stripe.Product[]> {
+export async function getAllProducts(): Promise<Stripe.Product[]> {
   let products: Stripe.Product[] = [];
   let hasMore: boolean = true;
   let startingAfter: string | null = null;

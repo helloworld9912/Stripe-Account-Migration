@@ -27,6 +27,17 @@ SOURCE_STRIPE_SECRET_KEY=""
 DESTINATION_STRIPE_SECRET_KEY=""
 ```
 
+### Inventory the data you want to migrate:
+
+```bash
+npm run inventory
+```
+
+or
+```bash
+yarn inventory
+```
+
 ### Run the migration script:
 
 ```bash

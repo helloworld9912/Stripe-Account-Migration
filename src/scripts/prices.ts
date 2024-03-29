@@ -133,7 +133,7 @@ function convertToPriceCreateParams(price: Stripe.Price): Stripe.PriceCreatePara
 
  
 
-async function getAllPrices(): Promise<Stripe.Price[]> {
+export async function getAllPrices(): Promise<Stripe.Price[]> {
     let prices: Stripe.Price[] = [];
     let hasMore = true;
     let startingAfter = null;
