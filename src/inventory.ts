@@ -5,8 +5,9 @@ import { getAllPrices } from "./scripts/prices";
 import { getAllProducts } from "./scripts/products";
 import { getAllPromotionCodes } from "./scripts/promotion_codes";
 import { getAllScriptionSchedules } from "./scripts/subscription_schedules";
-import { getAllSubscriptions } from "./scripts/subscriptions";
+import { getAllSubscriptions, getAllSubscriptionsExcept } from "./scripts/subscriptions";
 import { getAllInvoices } from "./scripts/invoices";
+import { SUBSCRIPTIONS_CONFIG } from "./config";
 
 async function startMigration(): Promise<void> {
   try {
@@ -28,8 +29,15 @@ async function startMigration(): Promise<void> {
     console.log(
       `Total subscription schedules to migrate: ${subscriptionSchedules.length}`
     );
-    const subscriptions = await getAllSubscriptions(); //can take a while
-    console.log(`Total subscriptions to migrate: ${subscriptions.length}`);
+
+    if(SUBSCRIPTIONS_CONFIG.EXCLUDED_PRICES.length > 0){
+      const subscriptions = await getAllSubscriptionsExcept(SUBSCRIPTIONS_CONFIG.EXCLUDED_PRICES);
+      console.log(`Total subscriptions to migrate: ${subscriptions.length}`);
+    }else{
+      const subscriptions = await getAllSubscriptions(); //can take a while
+      console.log(`Total subscriptions to migrate: ${subscriptions.length}`);
+    }
+ 
     const invoices = await getAllInvoices(); //can take a while
     console.log(`Total invoices to migrate: ${invoices.length}`);    
 
