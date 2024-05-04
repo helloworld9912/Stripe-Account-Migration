@@ -101,12 +101,12 @@ The following information can be migrated using this repository:
 
 To perform a complete migration, you need to follow these steps:
 
-  [] - Put your website in maintenance mode to avoid getting new customers, subscriptions,...
-  [] - Start the PAN migration process to get customers objects and payment method on your destination account (https://docs.stripe.com/get-started/data-migrations/pan-import)
-  [] - Run the inventory script to understand the quantity of data to migrate
-  [] - Start the migration process using the `migrate` script
-  [] - Update your website to use the new stripe API keys (destination account)
-  [] - Test your website to make sure everything is working fine
+- [ ] - Put your website in maintenance mode to avoid getting new customers, subscriptions,...
+- [ ] - Start the PAN migration process to get customers objects and payment method on your destination account (https://docs.stripe.com/get-started/data-migrations/pan-import)
+- [ ] - Run the inventory script to understand the quantity of data to migrate
+- [ ] - Start the migration process using the `migrate` script
+- [ ] - Update your website to use the new stripe API keys (destination account)
+- [ ] - Test your website to make sure everything is working fine
   [] - (Optional) - migrate invoice (special*)
   [] - Pause ALL subscriptions on the source account (to avoid customer being billed 2 times for the same service)
   [] - Update your `prices` reference in your app code if needed using the mapping file
