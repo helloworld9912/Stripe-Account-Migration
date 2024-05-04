@@ -6,6 +6,8 @@ import { migratePrices } from "./scripts/prices";
 import { migratePromotionCode } from "./scripts/promotion_codes";
 import { migrateScriptionSchedules } from "./scripts/subscription_schedules";
 import { migrateInvoices } from "./scripts/invoices";
+import { migrateSubscriptions } from "./scripts/subscriptions";
+import { migratePaymentLinks } from "./scripts/payment_links";
 
 /**
  * The migration process need to follow a specific order to avoid any issues.
@@ -38,6 +40,14 @@ async function startMigration(): Promise<void> {
 
     if(CONFIG.MIGRATE.PROMOTION_CODES) {
       await migratePromotionCode();
+    }
+
+    if(CONFIG.MIGRATE.PAYMENT_LINKS) {
+      await migratePaymentLinks();
+    }
+
+    if(CONFIG.MIGRATE.SUBSCRIPTIONS) {
+      await migrateSubscriptions();
     }
 
     if(CONFIG.MIGRATE.SUBSCRIPTION_SCHEDULES) {
