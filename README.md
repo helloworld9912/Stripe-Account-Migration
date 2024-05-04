@@ -96,6 +96,14 @@ The following information can be migrated using this repository:
 - [Subscriptions](https://docs.stripe.com/api/subscriptions/object) objects ✅ - subscriptions are linked to the prices, so we have to update the subscriptions using the new prices ids, using the mapping file created when migrating the prices.
 - [Subscription Schedules](https://docs.stripe.com/api/plans/object) objects ✅ 
 
+Need to be coded:
+- [Tax Rates](https://docs.stripe.com/api/tax_rates/object) objects - not implemented yet
+- [Shipping Rates](https://docs.stripe.com/api/shipping_rates/object) objects - not implemented yet
+- [Files](https://docs.stripe.com/api/files/object) objects - not implemented yet
+- [Quotes](https://docs.stripe.com/api/quotes/object) objects - not implemented yet
+- [Usage Records](https://docs.stripe.com/api/usage_records/object) objects - not implemented yet
+- [Connect Features](https://docs.stripe.com/api/connect) objects - all connect features are not implemented yet, feel free to contribute to this repository to add them
+
 
 ## How to perform a complete migration?
 
@@ -106,7 +114,7 @@ To perform a complete migration, you need to follow these steps:
 - [ ] Run the inventory script to understand the quantity of data to migrate
 - [ ] Start the migration process using the `migrate` script
 - [ ] Update your website to use the new stripe API keys (destination account)
-- [ ] Test your website to make sure everything is working fine
+- [ ] Test your website to make sure everything is working fine (re-create all webhooks, ...)
 - [ ] Pause ALL subscriptions on the source account (to avoid customer being billed 2 times for the same service), donc pause subscription on the source account before running the migration otherwise all subscriptions will be paused on the destination account too
 - [ ] (Optional) - migrate ALL invoices (special*)
 - [ ] Update your `prices` reference in your app code if needed using the mapping file
