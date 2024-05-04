@@ -149,7 +149,7 @@ export async function getAllPrices(): Promise<Stripe.Price[]> {
       }
 
       const response: Stripe.ApiList<Stripe.Price> = await sourceStripe.prices.list(request_params);
-      console.log(`Found ${response.data.length} more prices.`);
+      //console.log(`Found ${response.data.length} more prices.`);
       prices = prices.concat(response.data);
   
       hasMore = response.has_more;
