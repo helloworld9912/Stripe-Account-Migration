@@ -5,9 +5,11 @@ const INVOICES_CONFIG = {
 };
 
 const SUBSCRIPTIONS_CONFIG = {
+  EXPORT_JSON: true, //export subscriptions to a json file
+  SHOW_PROGRESS: true,
   EXCLUDED_PRICES: [ //subscriptions prices to exclude from the migration (e.g. free plans, etc.)
-    "price_1J5J1XJZ1jK5ZzJZJZJZJZJZ", //optional, only if you want to clean things up
-    "price_1J5J1XJZ1jK5ZzJZJZJZJZJZ",
+    "price_1MuCMJBsJM7cX1YeUg3wQc6P", //optional, only if you want to clean things up
+    "price_1Mj9QoBsJM7cX1YeLoK9Moro",
   ],
 };
 /**
@@ -22,7 +24,7 @@ const CONFIG = {
     COUPONS: true,
     PROMOTION_CODES: true,
     PAYMENT_LINKS: true,
-    SUBSCRIPTIONS: true,
+    SUBSCRIPTIONS: true, // except "incomplete", "incomplete_expired", "canceled"
     SUBSCRIPTION_SCHEDULES: false,
     INVOICES: true,
   },
