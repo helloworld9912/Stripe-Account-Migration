@@ -61,7 +61,7 @@ The following information can be migrated from the old account to the new accoun
 - [Customer](https://docs.stripe.com/api/customers/object) objects (keeping the same customer id)
 - [Card](https://docs.stripe.com/api/cards/object) objects
 - [Source](https://docs.stripe.com/api/sources/object) objects
-- [Payment Methods](https://docs.stripe.com/api/payment_methods/object) objects
+- [Payment Methods](https://docs.stripe.com/api/payment_methods/object) objects (except: SEPA, Bacs, ACH)
 - [Bank Accounts](https://docs.stripe.com/api/customer_bank_accounts/object) objects
 
 ## What information can not be migrated from the old account to the new account using the stripe process?
@@ -82,16 +82,21 @@ The following information can not be migrated from the old account to the new ac
 - [Payouts](https://docs.stripe.com/api/payouts/object) objects
 - [Logs](https://docs.stripe.com/api/) objects
 - [Guest Customer](https://support.stripe.com/questions/guest-customer-faq) objects
-  ... and many more
+  ... and more
 
 ## What information can I migrated using this repository?
 
 The following information can be migrated using this repository:
 
 - [Coupons](https://docs.stripe.com/api/coupons/object) objects ✅ (migrated without any changes, conserving the same coupon id and details)
+-[Promotion Codes](https://docs.stripe.com/api/promotion_codes/object) objects ✅ (migrated without any changes, conserving the same promotion code id and details)
 - [Products](https://docs.stripe.com/api/products/object) objects ✅ (migrated without any changes, conserving the same product id and details)
 - [Prices](https://docs.stripe.com/api/prices) objects \*\* prices is special, because all prices ids cannot be migrated due to the limitation of stripe API, we cannot specify a specific price ID when creating a new price ID on the destination account, so we have to create new prices in the new account and update the subscriptions to use the new prices ids, using a mapping file.
+
 - [Plans](https://docs.stripe.com/api/plans/object) objects ✅ - You can model subscriptions with more flexibly using the Prices API. It replaces the Plans API and is backwards compatible to simplify migration. so we use the prices API to migrate all the plans (if we have any) **(NOT TESTED)**
+- [Subscriptions](https://docs.stripe.com/api/subscriptions/object) objects ✅ - **(NOT TESTED)**
+- [Subscription Schedules](https://docs.stripe.com/api/plans/object) objects ✅  **(NOT TESTED)**
+
 
 ## How to use this repository?
 
