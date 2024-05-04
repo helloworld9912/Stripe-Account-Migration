@@ -5,6 +5,7 @@ import { migrateCoupons } from "./scripts/coupons_codes";
 import { CONFIG } from "./config";
 import { migratePromotionCode } from "./scripts/promotion_codes";
 import { migrateScriptionSchedules } from "./scripts/subscription_schedules";
+import { migrateInvoices } from "./scripts/invoices";
 
 // A type for the migration function
 type MigrationFunction = () => Promise<void>;
@@ -16,7 +17,7 @@ const migrationTasks: Record<string, MigrationFunction> = {
   //PRODUCTS: migrateProducts, // need nothing
   //PRICES: migratePrices, //need : ['products']
   //SUBSCRIPTIONS: migrateSubscriptions, //need : ['products', 'prices', 'customer']
-  SUBSCRIPTION_SCHEDULES: migrateScriptionSchedules, //need : ['products', 'prices', 'customer']
+  //SUBSCRIPTION_SCHEDULES: migrateScriptionSchedules, //need : ['products', 'prices', 'customer']
 };
 
 
@@ -24,8 +25,8 @@ const migrationTasks: Record<string, MigrationFunction> = {
 async function startMigration(): Promise<void> {
     console.log("Starting the migration process of your Stripe data...");
     //await migrateCoupons();
-    await migrateScriptionSchedules();
-  
+    //await migrateScriptionSchedules();
+    await migrateInvoices();
     /*
     for (const [key, isEnabled] of Object.entries(CONFIG.MIGRATE)) {
       if (isEnabled) {
