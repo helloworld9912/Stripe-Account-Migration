@@ -89,14 +89,28 @@ The following information can not be migrated from the old account to the new ac
 The following information can be migrated using this repository:
 
 - [Coupons](https://docs.stripe.com/api/coupons/object) objects ✅ (migrated without any changes, conserving the same coupon id and details)
--[Promotion Codes](https://docs.stripe.com/api/promotion_codes/object) objects ✅ (migrated without any changes, conserving the same promotion code id and details)
+- [Promotion Codes](https://docs.stripe.com/api/promotion_codes/object) objects ✅ (migrated without any changes, conserving the same promotion code id and details)
 - [Products](https://docs.stripe.com/api/products/object) objects ✅ (migrated without any changes, conserving the same product id and details)
-- [Prices](https://docs.stripe.com/api/prices) objects \*\* prices is special, because all prices ids cannot be migrated due to the limitation of stripe API, we cannot specify a specific price ID when creating a new price ID on the destination account, so we have to create new prices in the new account and update the subscriptions to use the new prices ids, using a mapping file.
+- [Prices](https://docs.stripe.com/api/prices) objects ✅ - prices is special, because all prices ids cannot be migrated due to the limitation of stripe API, we cannot specify a specific price ID when creating a new price ID on the destination account, so we have to create new prices in the new account and update the subscriptions to use the new prices ids, using a mapping file.
+- [Plans](https://docs.stripe.com/api/plans/object) objects ✅ - You can model subscriptions with more flexibly using the Prices API. It replaces the Plans API and is backwards compatible to simplify migration. so we use the prices API to migrate all the plans (if we have any)
+- [Subscriptions](https://docs.stripe.com/api/subscriptions/object) objects ✅ - subscriptions are linked to the prices, so we have to update the subscriptions using the new prices ids, using the mapping file created when migrating the prices.
+- [Subscription Schedules](https://docs.stripe.com/api/plans/object) objects ✅ 
 
-- [Plans](https://docs.stripe.com/api/plans/object) objects ✅ - You can model subscriptions with more flexibly using the Prices API. It replaces the Plans API and is backwards compatible to simplify migration. so we use the prices API to migrate all the plans (if we have any) **(NOT TESTED)**
-- [Subscriptions](https://docs.stripe.com/api/subscriptions/object) objects ✅ - **(NOT TESTED)**
-- [Subscription Schedules](https://docs.stripe.com/api/plans/object) objects ✅  **(NOT TESTED)**
 
+## How to perform a complete migration?
+
+To perform a complete migration, you need to follow these steps:
+
+  [ ] - Put your website in maintenance mode to avoid getting new customers, subscriptions,...
+  [ ] - Start the PAN migration process to get customers objects and payment method on your destination account (https://docs.stripe.com/get-started/data-migrations/pan-import)
+  [ ] - Run the inventory script to understand the quantity of data to migrate
+  [ ] - Start the migration process using the `migrate` script
+  [ ] - Update your website to use the new stripe API keys (destination account)
+  [ ] - Test your website to make sure everything is working fine
+  [ ] - (Optional) - migrate invoice (special*)
+  [ ] - Pause ALL subscriptions on the source account (to avoid customer being billed 2 times for the same service)
+  [ ] - Update your `prices` reference in your app code if needed using the mapping file
+  [ ] - Stop the maintenance mode
 
 ## How to use this repository?
 
