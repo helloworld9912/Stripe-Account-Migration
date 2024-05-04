@@ -1,6 +1,5 @@
 # Stripe Account Migration ToolKit V1.0
-
-A collection of tools to help you migrate a stripe account to a new account without losing data
+A collection of tools to help you migrate a stripe account to a new account without losing data. This is useful when you want to move your main used account to another country, or when you want to transfer your account to another person or company (for example, when you sell your business).
 
 ## Introduction
 
