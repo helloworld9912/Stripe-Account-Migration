@@ -49,6 +49,33 @@ export async function getAllScriptionSchedules(): Promise<
   return schedules.reverse();
 }
 
+// Function to create a new Subscription Schedule in the destination Stripe account
+async function createSubscriptionSchedule(
+  schedule: Stripe.SubscriptionSchedule
+): Promise<Stripe.SubscriptionSchedule> {
+  const params: Stripe.SubscriptionScheduleCreateParams = {
+    customer: schedule.customer as string,
+    start_date: schedule.phases[0].start_date,
+    end_behavior: schedule.end_behavior,
+    phases: schedule.phases.map((phase) => ({
+      items: phase.items.map((item) => ({
+        price: item.price as string,
+        quantity: item.quantity,
+        tax_rates: item.tax_rates as string[] | undefined,
+      })),
+      //iterations: phase.iterations,
+      start_date: phase.start_date,
+      end_date: phase.end_date,
+    })),
+  };
+
+  const newSchedule = await destinationStripe.subscriptionSchedules.create(
+    params
+  );
+
+  return newSchedule;
+}
+
 // Function to migrate Scription Schedules
 async function migrateScriptionSchedules(): Promise<void> {
   //check if destination and source env are properly set
@@ -65,9 +92,13 @@ async function migrateScriptionSchedules(): Promise<void> {
     `Total subscription schedules to migrate: ${subscription_schedules.length}`
   );
 
-  /*
+  
+
+
   for (let schedule of subscription_schedules) {
     try {
+      //show customers ids of the subscription schedules
+      console.log(`Schedule id: ${schedule.customer}`);
       const newSchedule = await createSubscriptionSchedule(schedule);
       console.log(`New Schedule created: ${newSchedule.id}`);
     } catch (err) {
@@ -77,6 +108,6 @@ async function migrateScriptionSchedules(): Promise<void> {
       );
     }
   }
-  */
 }
+
 export { migrateScriptionSchedules };
