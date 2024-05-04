@@ -221,6 +221,8 @@ function convertToSubscriptionCreateParams(
     createSubscriptionParams.cancel_at = subscription.cancel_at;
   }
 
+  createSubscriptionParams.payment_behavior = 'default_incomplete';
+
   /**
    * As we are migrating subscriptions, I assume we didnt need:
    * - trial_from_plan
