@@ -3,10 +3,12 @@ import * as dotenv from "dotenv";
 dotenv.config();
 import { SUBSCRIPTIONS_CONFIG } from "../config";
 import fs from 'fs';
+import { getAllPrices } from "./prices";
 
 interface ISubscriptionListRequestParams {
   limit: number;
   starting_after?: string;
+  price?: string;
 }
 
 // Stripe configuration and initialisation
@@ -265,6 +267,58 @@ async function createSubscription(
   return destinationStripe.subscriptions.create(createSubscriptionParams);
 }
 
+
+export async function getAllSubscriptionsExcept(
+  excludedPrices: string[]
+){
+//): Promise<Stripe.Subscription[]> {
+
+
+  //first get all prices
+  const prices = await getAllPrices();
+  console.log(`Total prices: ${prices.length}`);
+
+  //then filter out the excluded prices
+  let prices_filtered = prices.filter(
+    (price) => !excludedPrices.includes(price.id)
+  );
+  //filter out non-recurring prices (recurring = true)
+  prices_filtered = prices_filtered.filter(
+    (price) => price.recurring
+  );
+  console.log(`Total prices to migrate: ${prices_filtered.length}`);
+
+  let subscriptions: Stripe.Subscription[] = [];
+  for(let price of prices_filtered){
+    //console.log(`Price: ${price.id} - ${price.nickname}`);
+    let hasMore: boolean = true;
+    let startingAfter: string | null = null;
+    while (hasMore) {
+      let request_params: ISubscriptionListRequestParams = {
+        limit: PAGE_SIZE,
+        price: price.id,
+      };
+  
+      if (startingAfter) {
+        request_params["starting_after"] = startingAfter;
+      }
+  
+      const response = await sourceStripe.subscriptions.list(request_params);
+  
+      subscriptions = subscriptions.concat(response.data);
+      if (SUBSCRIPTIONS_CONFIG.SHOW_PROGRESS) {
+        console.log(`Fetched ${subscriptions.length} subscriptions`);
+      }
+  
+      hasMore = response.has_more;
+      if (response.data.length > 0) {
+        startingAfter = response.data[response.data.length - 1].id;
+      }
+    }
+  }
+  
+  return subscriptions.reverse();
+}
 // Function to retrieve all coupons from the source Stripe account
 export async function getAllSubscriptions(): Promise<Stripe.Subscription[]> {
   let subscriptions: Stripe.Subscription[] = [];
@@ -307,14 +361,70 @@ async function migrateSubscriptions(): Promise<void> {
   }
 
   console.log("Starting the migration of subscriptions...");
-  const subscriptions = await getAllSubscriptions();
+
+  let subscriptions
+  if(SUBSCRIPTIONS_CONFIG.EXCLUDED_PRICES.length > 0){
+    subscriptions = await getAllSubscriptionsExcept(SUBSCRIPTIONS_CONFIG.EXCLUDED_PRICES);
+  }else{
+    subscriptions = await getAllSubscriptions();
+  }
+  //const subscriptions = await getAllSubscriptions();
   console.log(`Total subscriptions to migrate: ${subscriptions.length}`);
+
+  if (SUBSCRIPTIONS_CONFIG.SHOW_PROGRESS) {
+    //show number of subscriptions by status
+    //incomplete
+    const incomplete_subscriptions = subscriptions.filter(
+      (subscription) => subscription.status === "incomplete"
+    );
+    console.log(`Incomplete subscriptions: ${incomplete_subscriptions.length}`);
+    //incomplete_expired 
+    const incomplete_expired_subscriptions = subscriptions.filter(
+      (subscription) => subscription.status === "incomplete_expired"
+    );
+    console.log(`Incomplete expired subscriptions: ${incomplete_expired_subscriptions.length}`);
+    //trialing
+    const trialing_subscriptions = subscriptions.filter(
+      (subscription) => subscription.status === "trialing"
+    );
+    console.log(`Trialing subscriptions: ${trialing_subscriptions.length}`);
+    //active
+    const active_subscriptions = subscriptions.filter(
+      (subscription) => subscription.status === "active"
+    );
+    console.log(`Active subscriptions: ${active_subscriptions.length}`);
+    //past_due
+    const past_due_subscriptions = subscriptions.filter(
+      (subscription) => subscription.status === "past_due"
+    );
+    console.log(`Past due subscriptions: ${past_due_subscriptions.length}`);
+    //unpaid
+    const unpaid_subscriptions = subscriptions.filter(
+      (subscription) => subscription.status === "unpaid"
+    );
+    console.log(`Unpaid subscriptions: ${unpaid_subscriptions.length}`);
+    //canceled
+    const canceled_subscriptions = subscriptions.filter(
+      (subscription) => subscription.status === "canceled"
+    );
+    console.log(`Canceled subscriptions: ${canceled_subscriptions.length}`);
+    //paused
+    const paused_subscriptions = subscriptions.filter(
+      (subscription) => subscription.status === "paused"
+    );
+    console.log(`Paused subscriptions: ${paused_subscriptions.length}`);
+
+      
+
+  }
+
   if(SUBSCRIPTIONS_CONFIG.EXPORT_JSON){
     console.log("Exporting subscriptions to a JSON file...");
     fs.writeFileSync("./output/subscriptions.json", JSON.stringify(subscriptions, null, 2));
     console.log("Subscriptions raw file saved in ./output/subscriptions.json");
   }
 
+  /*
   for (let subscription of subscriptions) {
     try {
       const newsubscription = await createSubscription(subscription);
@@ -325,6 +435,7 @@ async function migrateSubscriptions(): Promise<void> {
         `Failed to create subscription: ${subscription.id} - reason: ${message}`
       );
     }
-  }
+  }*/
+
 }
 export { migrateSubscriptions };
