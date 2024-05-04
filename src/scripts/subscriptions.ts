@@ -1,6 +1,8 @@
 import Stripe from "stripe";
 import * as dotenv from "dotenv";
 dotenv.config();
+import { SUBSCRIPTIONS_CONFIG } from "../config";
+import fs from 'fs';
 
 interface ISubscriptionListRequestParams {
   limit: number;
@@ -244,8 +246,22 @@ function convertToSubscriptionCreateParams(
 async function createSubscription(
   subscription: Stripe.Subscription
 ): Promise<Stripe.Response<Stripe.Subscription>> {
+
+  if(!fs.existsSync("./mappings/prices.json")){
+    throw new Error("No prices mapping found. Please migrate prices first.");
+  }
+  const price_mapping = JSON.parse(fs.readFileSync("./mappings/prices.json", "utf-8"));
   const createSubscriptionParams =
     convertToSubscriptionCreateParams(subscription);
+    createSubscriptionParams.items = createSubscriptionParams.items?.map((item) => {
+      if(item.price){
+        if(price_mapping[item.price]){
+          item.price = price_mapping[item.price];
+        }
+      }
+      return item;
+    }
+  );
   return destinationStripe.subscriptions.create(createSubscriptionParams);
 }
 
@@ -267,6 +283,9 @@ export async function getAllSubscriptions(): Promise<Stripe.Subscription[]> {
     const response = await sourceStripe.subscriptions.list(request_params);
 
     subscriptions = subscriptions.concat(response.data);
+    if (SUBSCRIPTIONS_CONFIG.SHOW_PROGRESS) {
+      console.log(`Fetched ${subscriptions.length} subscriptions`);
+    }
 
     hasMore = response.has_more;
     if (response.data.length > 0) {
@@ -290,6 +309,11 @@ async function migrateSubscriptions(): Promise<void> {
   console.log("Starting the migration of subscriptions...");
   const subscriptions = await getAllSubscriptions();
   console.log(`Total subscriptions to migrate: ${subscriptions.length}`);
+  if(SUBSCRIPTIONS_CONFIG.EXPORT_JSON){
+    console.log("Exporting subscriptions to a JSON file...");
+    fs.writeFileSync("./output/subscriptions.json", JSON.stringify(subscriptions, null, 2));
+    console.log("Subscriptions raw file saved in ./output/subscriptions.json");
+  }
 
   for (let subscription of subscriptions) {
     try {
