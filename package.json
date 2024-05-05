@@ -6,6 +6,7 @@
   "scripts": {
     "migrate": "npx ts-node src/migrate.ts",
     "inventory": "npx ts-node src/inventory.ts",
+    "import_mongo": "npx ts-node src/import.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -18,6 +19,7 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "fs": "^0.0.1-security",
+    "mongoose": "^8.3.3",
     "stripe": "^14.20.0"
   },
   "devDependencies": {
