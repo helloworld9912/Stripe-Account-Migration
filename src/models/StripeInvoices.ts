@@ -423,6 +423,9 @@ const StripeInvoiceSchema: Schema = new Schema({
   transfer_data: { type: Schema.Types.Mixed, required: false },
   webhooks_delivered_at: { type: Number, required: false },
   });
+
+  //add an index for customer id
+  StripeInvoiceSchema.index({ customer: 1 });
   
   const StripeInvoices: Model<IStripeInvoice> = mongoose.models.StripeInvoices || model('StripeInvoices', StripeInvoiceSchema);
   
