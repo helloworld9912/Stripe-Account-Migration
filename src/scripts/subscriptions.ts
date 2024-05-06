@@ -421,6 +421,9 @@ async function migrateSubscriptions(): Promise<void> {
   if(SUBSCRIPTIONS_CONFIG.EXPORT_JSON){
     console.log("Exporting subscriptions to a JSON file...");
     fs.writeFileSync("./output/subscriptions.json", JSON.stringify(subscriptions, null, 2));
+    const date_time_index = new Date().toISOString().replace(/:/g, "-");
+    //keep a snapshot of the subscriptions (to keep a trace in case of issues)
+    fs.writeFileSync(`./snapshots/subscriptions-${date_time_index}.json`, JSON.stringify(subscriptions, null, 2));
     console.log("Subscriptions raw file saved in ./output/subscriptions.json");
   }
 

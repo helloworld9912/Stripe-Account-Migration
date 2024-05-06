@@ -119,6 +119,17 @@ To perform a complete migration, you need to follow these steps:
 - [ ] Update your `prices` reference in your app code if needed using the mapping file
 - [ ] Stop the maintenance mode
 
+
+## PAN migration help sheet
+- On the source Account go to https://dashboard.stripe.com/settings/account and copy the account id (acct_...)
+- go to https://dashboard.stripe.com/settings/authorized_accounts on the Destination account
+- paste the source account ID in the input field and click on the "Confirm" button
+- Add an account to the team with the Specific Role "Data Migration Specialist"
+- Connect to stripe with this account and go on the Customer page (https://dashboard.stripe.com/customers)
+- CLick on "Copy" button (top right corner, near "Import"), then "copy all customers".
+- select the destination authorized account and click on the "Continue" button and confirm the request (you can copy the request ID)
+- On the destination account, accept the request to import all customers data
+
 ## How to use this repository?
 
 Install the dependencies:
