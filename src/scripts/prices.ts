@@ -63,9 +63,12 @@ function convertToPriceCreateParams(price: Stripe.Price): Stripe.PriceCreatePara
     }
   }
 
+  /* can't set both unit_amount and unit_amount_decimal */
+  /*
   if (price.unit_amount) {
     priceCreateParams.unit_amount = price.unit_amount;
   }
+  */
   
   if (price.billing_scheme) {
     priceCreateParams.billing_scheme = price.billing_scheme;

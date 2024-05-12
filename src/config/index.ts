@@ -19,14 +19,14 @@ const SUBSCRIPTIONS_CONFIG = {
  */
 const CONFIG = {
   MIGRATE: {
-    PRODUCTS: true,
-    PRICES: true,
-    COUPONS: true,
-    PROMOTION_CODES: true,
-    PAYMENT_LINKS: true,
+    PRODUCTS: false, //done
+    PRICES: false, //done
+    COUPONS: false, //done
+    PROMOTION_CODES: false,
+    PAYMENT_LINKS: false,
     SUBSCRIPTIONS: true, // except "incomplete", "incomplete_expired", "canceled"
     SUBSCRIPTION_SCHEDULES: false,
-    INVOICES: true,
+    INVOICES: false,
   },
 };
 

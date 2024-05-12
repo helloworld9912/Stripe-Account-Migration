@@ -136,7 +136,14 @@ async function migrateCoupons(): Promise<void> {
 
   for (let coupon of coupons) {
     try {
+      //check if the coupon already exists on the destination account
+      const existingCoupon = await destinationStripe.coupons.retrieve(coupon.id);
+      if(existingCoupon){
+        console.log(`Coupon ${coupon.id} already exists on the destination account.`);
+        continue;
+      }
       const newCoupon = await createCoupon(coupon);
+      console.log('Old coupon Id:', coupon.id);
       console.log(`New coupon created: ${newCoupon.id}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";

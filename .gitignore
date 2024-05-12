@@ -8,6 +8,7 @@ lerna-debug.log*
 .pnpm-debug.log*
 
 /output
+/input
 
 yarn.lock
 

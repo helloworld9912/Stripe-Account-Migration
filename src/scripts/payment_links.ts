@@ -24,12 +24,16 @@ function convertToPaymentLinkCreateParams(
 
   let line_items: Stripe.PaymentLinkCreateParams.LineItem[] = [];
 
+
   let createPaymentLinkParams: Stripe.PaymentLinkCreateParams = {
     line_items: line_items,
   };
 
   if (link.line_items) {
-    createPaymentLinkParams.line_items;
+    createPaymentLinkParams.line_items = link.line_items.data.map((item) => ({
+      price: item.price?.id || '',
+      quantity: item.quantity ?? 0,
+    }));
   }
 
   if (link.metadata) {

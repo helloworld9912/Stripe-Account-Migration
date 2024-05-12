@@ -2,7 +2,7 @@ import Stripe from "stripe";
 import * as dotenv from "dotenv";
 dotenv.config();
 import { SUBSCRIPTIONS_CONFIG } from "../config";
-import fs from 'fs';
+import fs from "fs";
 import { getAllPrices } from "./prices";
 
 interface ISubscriptionListRequestParams {
@@ -21,7 +21,7 @@ const DESTINATION_STRIPE_SECRET_KEY: string = process.env
 const sourceStripe = new Stripe(SOURCE_STRIPE_SECRET_KEY);
 const destinationStripe = new Stripe(DESTINATION_STRIPE_SECRET_KEY);
 
-function convertToSubscriptionCreateParams(
+export function convertToSubscriptionCreateParams(
   subscription: Stripe.Subscription
 ): Stripe.SubscriptionCreateParams {
   let customer_id;
@@ -35,23 +35,16 @@ function convertToSubscriptionCreateParams(
     customer: customer_id as string,
   };
 
-  if (subscription.cancel_at_period_end) {
-    createSubscriptionParams.cancel_at_period_end =
-      subscription.cancel_at_period_end;
-  }
 
   if (subscription.currency) {
     createSubscriptionParams.currency = subscription.currency;
   }
 
+  /* this can cause unwanted behavior, not setting will use the default payment method
   if (typeof subscription.default_payment_method === "object") {
     createSubscriptionParams.default_payment_method =
       subscription.default_payment_method?.id;
-  }
-  if (typeof subscription.default_payment_method === "string") {
-    createSubscriptionParams.default_payment_method =
-      subscription.default_payment_method;
-  }
+  }*/
 
   if (subscription.description) {
     createSubscriptionParams.description = subscription.description;
@@ -149,6 +142,8 @@ function convertToSubscriptionCreateParams(
         subscription.payment_settings.payment_method_types || undefined,
     };
 
+    /* use default payment method */
+    /*
     if (subscription.payment_settings?.payment_method_options) {
       const paymentMethodOptions =
         subscription.payment_settings.payment_method_options;
@@ -168,6 +163,7 @@ function convertToSubscriptionCreateParams(
         }
       });
     }
+    */
 
     createSubscriptionParams.payment_settings = payment_settings;
   }
@@ -184,10 +180,11 @@ function convertToSubscriptionCreateParams(
   //promotion_code //not implemented
 
   if (subscription.billing_cycle_anchor) {
-    createSubscriptionParams.billing_cycle_anchor =
-      subscription.billing_cycle_anchor;
+    //we dont use this because this will prorate the subscription
+   // createSubscriptionParams.billing_cycle_anchor = subscription.billing_cycle_anchor;
   }
 
+  /*
   if (subscription.billing_cycle_anchor_config?.day_of_month) {
     let billing_cycle_anchor_config: Stripe.SubscriptionCreateParams.BillingCycleAnchorConfig =
       {
@@ -212,20 +209,35 @@ function convertToSubscriptionCreateParams(
     createSubscriptionParams.billing_cycle_anchor_config =
       billing_cycle_anchor_config;
   }
+  */
 
   if (subscription.trial_end) {
-    createSubscriptionParams.trial_end = subscription.trial_end;
+    //if trial end unix is in the past dont set it
+    const currentTimestamp = Math.floor(Date.now() / 1000); // Get the current Unix timestamp
+    if (Number(subscription.trial_end) > currentTimestamp) {
+      // Set the trial_end only if it's in the future
+      createSubscriptionParams.trial_end = subscription.trial_end;
+    }
+    //createSubscriptionParams.trial_end = subscription.trial_end;
   }
 
   if (subscription.trial_settings) {
     createSubscriptionParams.trial_settings = subscription.trial_settings;
   }
 
-  if (subscription.cancel_at) {
+  if (subscription.cancel_at_period_end) {
+    createSubscriptionParams.cancel_at_period_end = subscription.cancel_at_period_end;
+  } else if (subscription.cancel_at) {
     createSubscriptionParams.cancel_at = subscription.cancel_at;
   }
 
-  createSubscriptionParams.payment_behavior = 'default_incomplete';
+  createSubscriptionParams.payment_behavior = "default_incomplete";
+
+  //if the subscription is active, we need to set a free trial so customer 
+  // is not charged directly after the migration
+  if (subscription.status === "active") {
+    createSubscriptionParams.trial_end = subscription.current_period_end
+  }
 
   /**
    * As we are migrating subscriptions, I assume we didnt need:
@@ -248,16 +260,18 @@ function convertToSubscriptionCreateParams(
 async function createSubscription(
   subscription: Stripe.Subscription
 ): Promise<Stripe.Response<Stripe.Subscription>> {
-
-  if(!fs.existsSync("./mappings/prices.json")){
+  if (!fs.existsSync("./mappings/prices.json")) {
     throw new Error("No prices mapping found. Please migrate prices first.");
   }
-  const price_mapping = JSON.parse(fs.readFileSync("./mappings/prices.json", "utf-8"));
+  const price_mapping = JSON.parse(
+    fs.readFileSync("./mappings/prices.json", "utf-8")
+  );
   const createSubscriptionParams =
     convertToSubscriptionCreateParams(subscription);
-    createSubscriptionParams.items = createSubscriptionParams.items?.map((item) => {
-      if(item.price){
-        if(price_mapping[item.price]){
+  createSubscriptionParams.items = createSubscriptionParams.items?.map(
+    (item) => {
+      if (item.price) {
+        if (price_mapping[item.price]) {
           item.price = price_mapping[item.price];
         }
       }
@@ -267,12 +281,8 @@ async function createSubscription(
   return destinationStripe.subscriptions.create(createSubscriptionParams);
 }
 
-
-export async function getAllSubscriptionsExcept(
-  excludedPrices: string[]
-){
-//): Promise<Stripe.Subscription[]> {
-
+export async function getAllSubscriptionsExcept(excludedPrices: string[]) {
+  //): Promise<Stripe.Subscription[]> {
 
   //first get all prices
   const prices = await getAllPrices();
@@ -283,13 +293,11 @@ export async function getAllSubscriptionsExcept(
     (price) => !excludedPrices.includes(price.id)
   );
   //filter out non-recurring prices (recurring = true)
-  prices_filtered = prices_filtered.filter(
-    (price) => price.recurring
-  );
+  prices_filtered = prices_filtered.filter((price) => price.recurring);
   console.log(`Total prices to migrate: ${prices_filtered.length}`);
 
   let subscriptions: Stripe.Subscription[] = [];
-  for(let price of prices_filtered){
+  for (let price of prices_filtered) {
     //console.log(`Price: ${price.id} - ${price.nickname}`);
     let hasMore: boolean = true;
     let startingAfter: string | null = null;
@@ -298,25 +306,25 @@ export async function getAllSubscriptionsExcept(
         limit: PAGE_SIZE,
         price: price.id,
       };
-  
+
       if (startingAfter) {
         request_params["starting_after"] = startingAfter;
       }
-  
+
       const response = await sourceStripe.subscriptions.list(request_params);
-  
+
       subscriptions = subscriptions.concat(response.data);
       if (SUBSCRIPTIONS_CONFIG.SHOW_PROGRESS) {
         console.log(`Fetched ${subscriptions.length} subscriptions`);
       }
-  
+
       hasMore = response.has_more;
       if (response.data.length > 0) {
         startingAfter = response.data[response.data.length - 1].id;
       }
     }
   }
-  
+
   return subscriptions.reverse();
 }
 // Function to retrieve all coupons from the source Stripe account
@@ -360,12 +368,15 @@ async function migrateSubscriptions(): Promise<void> {
     return;
   }
 
+
   console.log("Starting the migration of subscriptions...");
 
-  let subscriptions
-  if(SUBSCRIPTIONS_CONFIG.EXCLUDED_PRICES.length > 0){
-    subscriptions = await getAllSubscriptionsExcept(SUBSCRIPTIONS_CONFIG.EXCLUDED_PRICES);
-  }else{
+  let subscriptions;
+  if (SUBSCRIPTIONS_CONFIG.EXCLUDED_PRICES.length > 0) {
+    subscriptions = await getAllSubscriptionsExcept(
+      SUBSCRIPTIONS_CONFIG.EXCLUDED_PRICES
+    );
+  } else {
     subscriptions = await getAllSubscriptions();
   }
   //const subscriptions = await getAllSubscriptions();
@@ -378,11 +389,13 @@ async function migrateSubscriptions(): Promise<void> {
       (subscription) => subscription.status === "incomplete"
     );
     console.log(`Incomplete subscriptions: ${incomplete_subscriptions.length}`);
-    //incomplete_expired 
+    //incomplete_expired
     const incomplete_expired_subscriptions = subscriptions.filter(
       (subscription) => subscription.status === "incomplete_expired"
     );
-    console.log(`Incomplete expired subscriptions: ${incomplete_expired_subscriptions.length}`);
+    console.log(
+      `Incomplete expired subscriptions: ${incomplete_expired_subscriptions.length}`
+    );
     //trialing
     const trialing_subscriptions = subscriptions.filter(
       (subscription) => subscription.status === "trialing"
@@ -413,32 +426,34 @@ async function migrateSubscriptions(): Promise<void> {
       (subscription) => subscription.status === "paused"
     );
     console.log(`Paused subscriptions: ${paused_subscriptions.length}`);
-
-      
-
   }
 
-  if(SUBSCRIPTIONS_CONFIG.EXPORT_JSON){
+  if (SUBSCRIPTIONS_CONFIG.EXPORT_JSON) {
     console.log("Exporting subscriptions to a JSON file...");
-    fs.writeFileSync("./output/subscriptions.json", JSON.stringify(subscriptions, null, 2));
+    fs.writeFileSync(
+      "./output/subscriptions.json",
+      JSON.stringify(subscriptions, null, 2)
+    );
     const date_time_index = new Date().toISOString().replace(/:/g, "-");
     //keep a snapshot of the subscriptions (to keep a trace in case of issues)
-    fs.writeFileSync(`./snapshots/subscriptions-${date_time_index}.json`, JSON.stringify(subscriptions, null, 2));
+    fs.writeFileSync(
+      `./snapshots/subscriptions-${date_time_index}.json`,
+      JSON.stringify(subscriptions, null, 2)
+    );
     console.log("Subscriptions raw file saved in ./output/subscriptions.json");
   }
 
-  /*
+  
   for (let subscription of subscriptions) {
     try {
-      const newsubscription = await createSubscription(subscription);
-      console.log(`New subscription created: ${newsubscription.id}`);
+      //const newsubscription = await createSubscription(subscription);
+      //console.log(`New subscription created: ${newsubscription.id}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       console.error(
         `Failed to create subscription: ${subscription.id} - reason: ${message}`
       );
     }
-  }*/
-
+  }
 }
 export { migrateSubscriptions };

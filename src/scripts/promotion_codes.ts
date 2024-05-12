@@ -114,8 +114,14 @@ async function migratePromotionCode(): Promise<void> {
 
   for (let promo_code of promotion_codes) {
     try {
+      //if coupon is active
+      if(promo_code.active){
       const newPromoCode = await createPromotionCode(promo_code);
       console.log(`New Promo Code created: ${newPromoCode.id}`);
+      }else{
+        console.log(`Promo Code ${promo_code.id} is not active and will not be migrated`);
+      }
+      
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       console.error(

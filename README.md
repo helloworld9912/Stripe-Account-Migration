@@ -109,9 +109,10 @@ Need to be coded:
 To perform a complete migration, you need to follow these steps:
 
 - [ ] Put your website in maintenance mode to avoid getting new customers, subscriptions,...
-- [ ] Start the PAN migration process to get customers objects and payment method on your destination account (https://docs.stripe.com/get-started/data-migrations/pan-import)
+- [ ] Start the PAN migration process to get customers objects and payment method on your destination account (https://docs.stripe.com/get-started/data-migrations/pan-import) (see detailed instruction bellow)
+- [ ] Load the csv file inside ./input/sources_mapping.csv, you can get this file only on the destination account under the "Documents" tab (https://dashboard.stripe.com/settings/documents) this file contains the mapping between souce payment method id and destination payment method id
 - [ ] Run the inventory script to understand the quantity of data to migrate
-- [ ] Start the migration process using the `migrate` script
+- [ ] Start the migration process using the `migrate` script 
 - [ ] Update your website to use the new stripe API keys (destination account)
 - [ ] Test your website to make sure everything is working fine (re-create all webhooks, ...)
 - [ ] Pause ALL subscriptions on the source account (to avoid customer being billed 2 times for the same service), donc pause subscription on the source account before running the migration otherwise all subscriptions will be paused on the destination account too
@@ -129,6 +130,9 @@ To perform a complete migration, you need to follow these steps:
 - CLick on "Copy" button (top right corner, near "Import"), then "copy all customers".
 - select the destination authorized account and click on the "Continue" button and confirm the request (you can copy the request ID)
 - On the destination account, accept the request to import all customers data
+- Once the import is finished, go on the destination account in Profile -> Documents (https://dashboard.stripe.com/settings/documents) and download the mapping file. (the mapping file contain the mapping of all new payment method "pm_" objects)
+- put the mapping file inside ./input/sources_mapping.csv (rename the .csv file)
+- run the migration script `yarn migrate`
 
 ## How to use this repository?
 
