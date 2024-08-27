@@ -8,8 +8,8 @@ dotenv.config();
 const PAGE_SIZE = 100;
 
 if(!process.env.SOURCE_STRIPE_SECRET_KEY || !process.env.DESTINATION_STRIPE_SECRET_KEY) {
-    console.error("Please set SOURCE_STRIPE_SECRET_KEY and DESTINATION_STRIPE_SECRET_KEY in .env file");
-    process.exit(1);
+  console.error("Please set SOURCE_STRIPE_SECRET_KEY and DESTINATION_STRIPE_SECRET_KEY in .env file");
+  process.exit(1);
 }
 
 const SOURCE_STRIPE_SECRET_KEY: string = process.env.SOURCE_STRIPE_SECRET_KEY!;
@@ -20,11 +20,6 @@ const destinationStripe = new Stripe(DESTINATION_STRIPE_SECRET_KEY);
 
 function convertToPriceCreateParams(price: Stripe.Price): Stripe.PriceCreateParams {
 
-  //if billing_scheme is set to tiered, return (not implemented yet)
-  if(price.billing_scheme === 'tiered') {
-    console.error("Tiered billing_scheme is not supported yet");
-    return {} as Stripe.PriceCreateParams;
-  }
 
   // Start with the required properties
   let priceCreateParams: Stripe.PriceCreateParams = {
@@ -36,11 +31,11 @@ function convertToPriceCreateParams(price: Stripe.Price): Stripe.PriceCreatePara
   if (price.nickname) {
     priceCreateParams.nickname = price.nickname;
   }
-  
+
   if ('active' in price) {
     priceCreateParams.active = price.active;
   }
-  
+
   if (price.metadata) {
     priceCreateParams.metadata = price.metadata;
   }
@@ -53,11 +48,11 @@ function convertToPriceCreateParams(price: Stripe.Price): Stripe.PriceCreatePara
     if (price.recurring.aggregate_usage) {
       priceCreateParams.recurring.aggregate_usage = price.recurring.aggregate_usage;
     }
-    
+
     if (price.recurring.interval_count) {
       priceCreateParams.recurring.interval_count = price.recurring.interval_count;
     }
-    
+
     if (price.recurring.usage_type) {
       priceCreateParams.recurring.usage_type = price.recurring.usage_type;
     }
@@ -69,11 +64,11 @@ function convertToPriceCreateParams(price: Stripe.Price): Stripe.PriceCreatePara
     priceCreateParams.unit_amount = price.unit_amount;
   }
   */
-  
+
   if (price.billing_scheme) {
     priceCreateParams.billing_scheme = price.billing_scheme;
   }
-  
+
   if (price.custom_unit_amount) {
     priceCreateParams.custom_unit_amount = {
       enabled: true,
@@ -82,44 +77,74 @@ function convertToPriceCreateParams(price: Stripe.Price): Stripe.PriceCreatePara
       preset: price.custom_unit_amount.preset as number,
     };
   }
-  
+
   if (price.lookup_key) {
     priceCreateParams.lookup_key = price.lookup_key;
   }
-  
+
   //price.product_data is ignored as we only need the product ID
-  
+
   if (price.tax_behavior) {
     priceCreateParams.tax_behavior = price.tax_behavior;
   }
-  
+
   if (price.tiers_mode) {
     priceCreateParams.tiers_mode = price.tiers_mode;
   }
-  
+
+  if (Array.isArray(price.tiers)) {
+    priceCreateParams.tiers = price.tiers.map((tier) => {
+
+
+      // Set required setting
+      let tierParams = {
+        // for the last tier in a set, up_to is set to 'inf'
+         up_to: tier.up_to || 'inf'
+      } as Stripe.PriceCreateParams.Tier
+      // Allow for zero values 
+
+
+      // only flat amount or flat amount decimal can be defined, not both, preference here is given for decimal units
+      if (tier.flat_amount_decimal) {
+        tierParams.flat_amount_decimal = tier.flat_amount_decimal
+      } else if(typeof tier.flat_amount === 'number') {
+        tierParams.flat_amount = tier.flat_amount
+      }
+
+      // only unit amount or unit amount decimal can be defined, not both, preference here is given for decimal units
+      if (tier.unit_amount_decimal) {
+        tierParams.unit_amount_decimal = tier.unit_amount_decimal
+      } else if(typeof tier.unit_amount === 'number') {
+        tierParams.unit_amount = tier.unit_amount
+      }
+
+      return tierParams;
+    });
+  }
+
   if (price.transform_quantity) {
     priceCreateParams.transform_quantity = {
       divide_by: price.transform_quantity.divide_by,
       round: price.transform_quantity.round,
     };
   }
-  
+
   if (price.unit_amount_decimal) {
     priceCreateParams.unit_amount_decimal = price.unit_amount_decimal;
   }
-  
+
   // The actual Price object may contain other properties for currency_options and tiers
   if (price.currency_options) {
     priceCreateParams.currency_options = {};
 
     for (const [currencyCode, currencyOption] of Object.entries(price.currency_options)) {
-        let currencyOptionParams: Stripe.PriceCreateParams.CurrencyOptions = {};
+      let currencyOptionParams: Stripe.PriceCreateParams.CurrencyOptions = {};
 
-        if (currencyOption.unit_amount) {
-          currencyOptionParams.unit_amount = currencyOption.unit_amount;
-        }
-        
-        priceCreateParams.currency_options[currencyCode] = currencyOptionParams;
+      if (currencyOption.unit_amount) {
+        currencyOptionParams.unit_amount = currencyOption.unit_amount;
+      }
+
+      priceCreateParams.currency_options[currencyCode] = currencyOptionParams;
     }
   }
 
@@ -128,40 +153,41 @@ function convertToPriceCreateParams(price: Stripe.Price): Stripe.PriceCreatePara
 
 
 
-  async function createPrice(priceData: Stripe.Price): Promise<Stripe.Response<Stripe.Price>> {
-    const newPriceData = convertToPriceCreateParams(priceData);
-    const newPrice = await destinationStripe.prices.create(newPriceData);
-    return newPrice;
-  }
+async function createPrice(priceData: Stripe.Price): Promise<Stripe.Response<Stripe.Price>> {
+  const newPriceData = convertToPriceCreateParams(priceData);
+  const newPrice = await destinationStripe.prices.create(newPriceData);
+  return newPrice;
+}
 
- 
+
 
 export async function getAllPrices(): Promise<Stripe.Price[]> {
-    let prices: Stripe.Price[] = [];
-    let hasMore = true;
-    let startingAfter = null;
-    
-    while (hasMore) {
+  let prices: Stripe.Price[] = [];
+  let hasMore = true;
+  let startingAfter = null;
 
-      let request_params: Stripe.PriceListParams = {
-        limit: PAGE_SIZE,
-      };
+  while (hasMore) {
 
-      if (startingAfter) {
-        request_params['starting_after'] = startingAfter;
-      }
+    let request_params: Stripe.PriceListParams = {
+      limit: PAGE_SIZE,
+      expand: ['data.tiers', 'data.currency_options'],
+    };
 
-      const response: Stripe.ApiList<Stripe.Price> = await sourceStripe.prices.list(request_params);
-      //console.log(`Found ${response.data.length} more prices.`);
-      prices = prices.concat(response.data);
-  
-      hasMore = response.has_more;
-      if (response.data.length > 0) {
-        startingAfter = response.data[response.data.length - 1].id;
-      }
+    if (startingAfter) {
+      request_params['starting_after'] = startingAfter;
     }
-  
-    return prices.reverse(); // Keep historical order
+
+    const response: Stripe.ApiList<Stripe.Price> = await sourceStripe.prices.list(request_params);
+    //console.log(`Found ${response.data.length} more prices.`);
+    prices = prices.concat(response.data);
+
+    hasMore = response.has_more;
+    if (response.data.length > 0) {
+      startingAfter = response.data[response.data.length - 1].id;
+    }
+  }
+
+  return prices.reverse(); // Keep historical order
 }
 
 async function migratePrices(): Promise<void> {
@@ -172,9 +198,9 @@ async function migratePrices(): Promise<void> {
   for (let price of prices) {
     try {
       console.log("Creating price:", price.id);
-      const newPrice = await createPrice(price);
-      console.log("New price created: ", newPrice.id); 
-      new_prices_mapping[price.id] = newPrice.id;  
+        const newPrice = await createPrice(price);
+        console.log("New price created: ", newPrice.id);
+        new_prices_mapping[price.id] = newPrice.id;
     } catch (err) {
       console.error(`Failed to migrate price: ${price.id} - reason: ${err instanceof Error ? err.message : "Unknown error"}`);
       continue;
