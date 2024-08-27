@@ -10,6 +10,8 @@
     "pm-map": "npx ts-node src/subscription_mapper.ts",
     "manual-sub": "npx ts-node src/manual_subscription_migate.ts",
     "pause": "npx ts-node src/manual_subscription_pause.ts",
+    "resume": "npx ts-node src/manual_subscription_resume.ts",
+    "extract": "npx ts-node src/extract_tx_details.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -20,13 +22,17 @@
   "author": "helloworld9912",
   "license": "MIT",
   "dependencies": {
+    "@types/xlsx": "^0.0.36",
+    "axios": "^1.7.2",
     "csv-parse": "^5.5.5",
     "csv-parser": "^3.0.0",
     "csvtojson": "^2.0.10",
     "dotenv": "^16.4.5",
     "fs": "^0.0.1-security",
     "mongoose": "^8.3.3",
-    "stripe": "^14.20.0"
+    "papaparse": "^5.4.1",
+    "stripe": "^14.20.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^20.11.25",
