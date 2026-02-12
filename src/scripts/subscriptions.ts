@@ -181,7 +181,7 @@ export function convertToSubscriptionCreateParams(
 
   if (subscription.billing_cycle_anchor) {
     //we dont use this because this will prorate the subscription
-   // createSubscriptionParams.billing_cycle_anchor = subscription.billing_cycle_anchor;
+    // createSubscriptionParams.billing_cycle_anchor = subscription.billing_cycle_anchor;
   }
 
   /*
@@ -430,6 +430,12 @@ async function migrateSubscriptions(): Promise<void> {
 
   if (SUBSCRIPTIONS_CONFIG.EXPORT_JSON) {
     console.log("Exporting subscriptions to a JSON file...");
+    if (!fs.existsSync("./output")) {
+      fs.mkdirSync("./output", { recursive: true });
+    }
+    if (!fs.existsSync("./snapshots")) {
+      fs.mkdirSync("./snapshots", { recursive: true });
+    }
     fs.writeFileSync(
       "./output/subscriptions.json",
       JSON.stringify(subscriptions, null, 2)
@@ -443,7 +449,7 @@ async function migrateSubscriptions(): Promise<void> {
     console.log("Subscriptions raw file saved in ./output/subscriptions.json");
   }
 
-  
+
   for (let subscription of subscriptions) {
     try {
       //const newsubscription = await createSubscription(subscription);

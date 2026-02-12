@@ -7,7 +7,7 @@ dotenv.config();
 
 const PAGE_SIZE = 100;
 
-if(!process.env.SOURCE_STRIPE_SECRET_KEY || !process.env.DESTINATION_STRIPE_SECRET_KEY) {
+if (!process.env.SOURCE_STRIPE_SECRET_KEY || !process.env.DESTINATION_STRIPE_SECRET_KEY) {
   console.error("Please set SOURCE_STRIPE_SECRET_KEY and DESTINATION_STRIPE_SECRET_KEY in .env file");
   process.exit(1);
 }
@@ -99,7 +99,7 @@ function convertToPriceCreateParams(price: Stripe.Price): Stripe.PriceCreatePara
       // Set required setting
       let tierParams = {
         // for the last tier in a set, up_to is set to 'inf'
-         up_to: tier.up_to || 'inf'
+        up_to: tier.up_to || 'inf'
       } as Stripe.PriceCreateParams.Tier
       // Allow for zero values 
 
@@ -107,14 +107,14 @@ function convertToPriceCreateParams(price: Stripe.Price): Stripe.PriceCreatePara
       // only flat amount or flat amount decimal can be defined, not both, preference here is given for decimal units
       if (tier.flat_amount_decimal) {
         tierParams.flat_amount_decimal = tier.flat_amount_decimal
-      } else if(typeof tier.flat_amount === 'number') {
+      } else if (typeof tier.flat_amount === 'number') {
         tierParams.flat_amount = tier.flat_amount
       }
 
       // only unit amount or unit amount decimal can be defined, not both, preference here is given for decimal units
       if (tier.unit_amount_decimal) {
         tierParams.unit_amount_decimal = tier.unit_amount_decimal
-      } else if(typeof tier.unit_amount === 'number') {
+      } else if (typeof tier.unit_amount === 'number') {
         tierParams.unit_amount = tier.unit_amount
       }
 
@@ -134,10 +134,16 @@ function convertToPriceCreateParams(price: Stripe.Price): Stripe.PriceCreatePara
   }
 
   // The actual Price object may contain other properties for currency_options and tiers
+  // Stripe rejects currency_options when it matches the top-level currency
   if (price.currency_options) {
+    const topLevelCurrency = price.currency;
     priceCreateParams.currency_options = {};
 
     for (const [currencyCode, currencyOption] of Object.entries(price.currency_options)) {
+      if (currencyCode === topLevelCurrency) {
+        continue;
+      }
+
       let currencyOptionParams: Stripe.PriceCreateParams.CurrencyOptions = {};
 
       if (currencyOption.unit_amount) {
@@ -145,6 +151,10 @@ function convertToPriceCreateParams(price: Stripe.Price): Stripe.PriceCreatePara
       }
 
       priceCreateParams.currency_options[currencyCode] = currencyOptionParams;
+    }
+
+    if (Object.keys(priceCreateParams.currency_options).length === 0) {
+      delete priceCreateParams.currency_options;
     }
   }
 
@@ -198,9 +208,9 @@ async function migratePrices(): Promise<void> {
   for (let price of prices) {
     try {
       console.log("Creating price:", price.id);
-        const newPrice = await createPrice(price);
-        console.log("New price created: ", newPrice.id);
-        new_prices_mapping[price.id] = newPrice.id;
+      const newPrice = await createPrice(price);
+      console.log("New price created: ", newPrice.id);
+      new_prices_mapping[price.id] = newPrice.id;
     } catch (err) {
       console.error(`Failed to migrate price: ${price.id} - reason: ${err instanceof Error ? err.message : "Unknown error"}`);
       continue;
