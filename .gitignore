@@ -9,6 +9,8 @@ lerna-debug.log*
 
 /output
 /input
+/snapshots
+/mappings
 
 yarn.lock
 
